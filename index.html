@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aliscência</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:      #07000c;
+  --bg2:     #0d0117;
+  --bg3:     #130120;
+  --purple:  #8a32cc;
+  --purple2: #b06ee8;
+  --wine:    #9e1f38;
+  --gold:    #d4aa66;
+  --gold2:   #e8c378;
+  --text:    #e4d8f0;
+  --muted:   #8a7aa8;
+  --sel:     rgba(138,50,204,0.15);
+  --border:  rgba(138,50,204,0.25);
+  --ci:      'Cinzel', serif;
+  --cd:      'Cinzel Decorative', cursive;
+  --fe:      'IM Fell English', serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--fe);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: relative;
+}
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+  pointer-events:none;
+  z-index:9999;
+}
+#particles { position:fixed; inset:0; pointer-events:none; z-index:0; }
+
+/* ── TOPBAR ── */
+#topbar {
+  position:relative; z-index:20;
+  display:flex; align-items:center;
+  padding:0.7rem 1.4rem;
+  background:linear-gradient(90deg,#0a0014 0%,#0d0020 60%,#0a0014 100%);
+  border-bottom:1px solid var(--border);
+  gap:1rem; flex-shrink:0;
+}
+.logo-text {
+  font-family:var(--cd);
+  font-size:clamp(1.3rem,3.5vw,2.2rem);
+  background:linear-gradient(135deg,#c084fc 0%,#8b3dde 45%,#b52340 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  filter:drop-shadow(0 0 10px rgba(155,61,222,0.5));
+  white-space:nowrap;
+}
+.logo-flask { width:36px; height:36px; filter:drop-shadow(0 0 8px rgba(181,35,64,0.9)); flex-shrink:0; }
+#stats-bar { margin-left:auto; display:flex; gap:1.4rem; align-items:center; }
+.stat-item { display:flex; flex-direction:column; align-items:center; gap:0.15rem; }
+.stat-label { font-family:var(--ci); font-size:0.6rem; color:var(--muted); letter-spacing:0.18em; text-transform:uppercase; }
+.stat-val { font-family:var(--cd); font-size:0.9rem; color:var(--gold2); text-shadow:0 0 10px rgba(212,170,90,0.5); }
+.stat-bar-wrap { display:flex; gap:3px; align-items:center; }
+.stat-pip { font-size:0.75rem; color:rgba(138,50,204,0.3); line-height:1; transition:color 0.3s,text-shadow 0.3s; }
+.stat-pip.on { color:var(--gold2); text-shadow:0 0 6px rgba(212,170,90,0.6); }
+
+/* ── LAYOUT ── */
+#app { position:relative; z-index:10; display:flex; flex:1; overflow:hidden; }
+
+/* ── SIDEBAR ── */
+#sidebar {
+  width:220px; flex-shrink:0;
+  display:flex; flex-direction:column;
+  border-right:1px solid var(--border);
+  background:linear-gradient(180deg,#0a0016 0%,#0d001f 100%);
+  padding:1.5rem 0; gap:0; position:relative;
+}
+#sidebar::after {
+  content:''; position:absolute; right:-1px; top:10%; bottom:10%;
+  width:1px; background:linear-gradient(180deg,transparent,var(--purple),transparent); opacity:0.5;
+}
+.menu-section-label {
+  font-family:var(--ci); font-size:0.6rem; letter-spacing:0.22em;
+  color:var(--gold); padding:1rem 1.4rem 0.4rem; text-transform:uppercase; opacity:0.55;
+}
+.menu-item {
+  position:relative; display:flex; align-items:center; gap:0.7rem;
+  padding:0.7rem 1.4rem 0.7rem 2.6rem;
+  cursor:pointer; transition:background 0.15s; border:1px solid transparent; user-select:none;
+}
+.menu-item::before {
+  content:'✦'; position:absolute; left:0.9rem;
+  font-family:var(--fe); font-size:0.7rem; color:var(--gold2);
+  opacity:0; transition:opacity 0.15s; text-shadow:0 0 8px rgba(212,170,90,0.7);
+}
+.menu-item.active::before { opacity:1; }
+.menu-item.active { background:var(--sel); border-color:transparent var(--border) transparent transparent; }
+.menu-item.active .menu-label { color:var(--gold2); text-shadow:0 0 10px rgba(232,201,109,0.4); }
+.menu-item:hover:not(.active) { background:rgba(138,50,204,0.07); }
+.menu-item:hover:not(.active) .menu-label { color:var(--purple2); }
+.menu-icon { font-size:1rem; flex-shrink:0; }
+.menu-label { font-family:var(--ci); font-size:0.72rem; letter-spacing:0.14em; color:var(--muted); transition:color 0.15s; text-transform:uppercase; line-height:1.4; }
+.menu-count { margin-left:auto; font-family:var(--ci); font-size:0.6rem; color:var(--gold); background:rgba(184,146,74,0.1); border:1px solid rgba(184,146,74,0.22); padding:0.1rem 0.4rem; border-radius:1px; letter-spacing:0.05em; }
+#sidebar-footer { margin-top:auto; padding:1rem 1.4rem; font-family:var(--fe); font-style:italic; font-size:0.72rem; color:rgba(184,146,74,0.3); letter-spacing:0.04em; border-top:1px solid rgba(184,146,74,0.1); line-height:1.6; }
+
+/* ── CONTENT ── */
+#content { flex:1; overflow-y:auto; overflow-x:hidden; padding:1.8rem 2rem; position:relative; }
+#content::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--purple) 0%,var(--wine) 50%,transparent 100%); opacity:0.4; }
+#content::-webkit-scrollbar { width:4px; }
+#content::-webkit-scrollbar-track { background:transparent; }
+#content::-webkit-scrollbar-thumb { background:var(--purple); border-radius:2px; }
+
+/* ── SECTIONS ── */
+.section { display:none; animation:section-in 0.25s ease; }
+.section.active { display:block; }
+@keyframes section-in { from{opacity:0;transform:translateX(18px)} to{opacity:1;transform:translateX(0)} }
+
+.sec-head { display:flex; align-items:flex-end; gap:1rem; margin-bottom:1.6rem; padding-bottom:0.8rem; border-bottom:1px solid var(--border); position:relative; }
+.sec-head::after { content:''; position:absolute; bottom:-1px; left:0; width:80px; height:1px; background:var(--purple); box-shadow:0 0 8px var(--purple); }
+.sec-title { font-family:var(--cd); font-size:clamp(1rem,2.5vw,1.5rem); color:var(--purple2); text-shadow:0 0 16px rgba(192,132,252,0.35); line-height:1.1; }
+.sec-sub { font-family:var(--ci); font-size:0.62rem; color:var(--gold); letter-spacing:0.22em; margin-left:auto; white-space:nowrap; opacity:0.6; text-transform:uppercase; }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center;
+  margin-bottom:1.4rem; padding:0.75rem 1rem;
+  background:rgba(138,50,204,0.05); border:1px solid rgba(138,50,204,0.15);
+  position:relative;
+}
+.filter-bar::before {
+  content:'⚗'; position:absolute; left:-0.65rem; top:50%; transform:translateY(-50%);
+  color:var(--gold); font-size:0.95rem; background:var(--bg); padding:0 0.2rem;
+}
+.filter-input {
+  flex:1; min-width:150px;
+  background:rgba(255,255,255,0.03); border:1px solid rgba(138,50,204,0.22);
+  color:var(--text); font-family:var(--fe); font-style:italic; font-size:0.88rem;
+  padding:0.38rem 0.75rem; outline:none; transition:border-color 0.2s;
+}
+.filter-input:focus { border-color:var(--purple); }
+.filter-input::placeholder { color:var(--muted); opacity:0.6; }
+.filter-select {
+  background:rgba(255,255,255,0.03); border:1px solid rgba(138,50,204,0.22);
+  color:var(--muted); font-family:var(--ci); font-size:0.62rem; letter-spacing:0.1em;
+  padding:0.38rem 0.7rem; outline:none; cursor:pointer; text-transform:uppercase; transition:border-color 0.2s;
+}
+.filter-select:focus { border-color:var(--purple); color:var(--text); }
+.filter-select option { background:var(--bg2); }
+.filter-clear {
+  font-family:var(--ci); font-size:0.6rem; letter-spacing:0.1em;
+  padding:0.38rem 0.8rem; background:transparent;
+  border:1px solid rgba(158,31,56,0.4); color:var(--wine);
+  cursor:pointer; text-transform:uppercase; transition:all 0.15s; white-space:nowrap;
+}
+.filter-clear:hover { background:rgba(158,31,56,0.1); border-color:var(--wine); }
+
+/* ── ADD BTN ── */
+.add-btn {
+  font-family:var(--ci); font-size:0.7rem; letter-spacing:0.2em;
+  padding:0.55rem 1.4rem; background:transparent;
+  border:1px solid rgba(138,50,204,0.4); color:var(--purple2);
+  cursor:pointer; transition:all 0.25s;
+  display:inline-flex; align-items:center; gap:0.6rem; margin-bottom:1.5rem; text-transform:uppercase;
+}
+.add-btn::before { content:'✦ '; color:var(--gold); font-size:0.7rem; }
+.add-btn::after  { content:' ✦'; color:var(--gold); font-size:0.7rem; }
+.add-btn:hover { background:rgba(138,50,204,0.12); border-color:rgba(138,50,204,0.7); box-shadow:0 0 18px rgba(138,50,204,0.2); color:var(--gold2); }
+
+/* ── GRID & CARD ── */
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem; }
+.card {
+  background:linear-gradient(135deg,var(--bg2),var(--bg3));
+  border:1px solid rgba(138,50,204,0.2); padding:1.2rem;
+  position:relative; transition:border-color 0.2s,box-shadow 0.2s;
+  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
+}
+.card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--purple),transparent); opacity:0; transition:opacity 0.2s; }
+.card:hover { border-color:rgba(138,50,204,0.5); box-shadow:0 0 20px rgba(138,50,204,0.1); }
+.card:hover::before { opacity:1; }
+.card::after { content:''; position:absolute; top:0; right:0; width:12px; height:12px; border-top:1px solid var(--purple); border-right:1px solid var(--purple); opacity:0.5; }
+.card-name { font-family:var(--ci); font-size:0.88rem; color:var(--text); font-weight:600; margin-bottom:0.25rem; }
+.card-sub { font-family:var(--ci); font-size:0.65rem; color:var(--gold); letter-spacing:0.14em; margin-bottom:0.6rem; text-transform:uppercase; opacity:0.8; }
+.card-desc { font-size:0.83rem; color:var(--muted); line-height:1.6; font-style:italic; margin-bottom:0.6rem; }
+.card-tags { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.6rem; }
+.tag { font-family:var(--ci); font-size:0.6rem; padding:0.15rem 0.55rem; background:rgba(138,50,204,0.08); border:1px solid rgba(138,50,204,0.22); color:var(--purple2); letter-spacing:0.1em; }
+.badge { font-family:var(--ci); font-size:0.58rem; padding:0.15rem 0.55rem; letter-spacing:0.1em; text-transform:uppercase; display:inline-block; margin-bottom:0.5rem; }
+.badge-floral   { background:rgba(139,26,74,0.3);  color:#e879a4; border:1px solid rgba(232,121,164,0.3); }
+.badge-woody    { background:rgba(121,80,20,0.3);  color:#d4a76a; border:1px solid rgba(212,167,106,0.3); }
+.badge-oriental { background:rgba(120,20,20,0.3);  color:#e87070; border:1px solid rgba(232,112,112,0.3); }
+.badge-fresh    { background:rgba(20,80,120,0.3);  color:#70b8e8; border:1px solid rgba(112,184,232,0.3); }
+.badge-citrus   { background:rgba(120,100,20,0.3); color:#e8c870; border:1px solid rgba(232,200,112,0.3); }
+.badge-fougere  { background:rgba(20,100,60,0.3);  color:#70e8a0; border:1px solid rgba(112,232,160,0.3); }
+.badge-chypre   { background:rgba(80,40,100,0.3);  color:#c070e8; border:1px solid rgba(192,112,232,0.3); }
+.badge-gourmand { background:rgba(80,30,10,0.3);   color:#e8a070; border:1px solid rgba(232,160,112,0.3); }
+.badge-aquatic  { background:rgba(10,60,100,0.3);  color:#60c8e0; border:1px solid rgba(96,200,224,0.3); }
+.card-actions { display:flex; gap:0.4rem; justify-content:flex-end; margin-top:0.6rem; padding-top:0.6rem; border-top:1px solid rgba(138,50,204,0.12); }
+.btn-sm { font-family:var(--ci); font-size:0.6rem; padding:0.28rem 0.65rem; background:transparent; border:1px solid rgba(138,50,204,0.25); color:var(--muted); cursor:pointer; letter-spacing:0.1em; text-transform:uppercase; transition:all 0.15s; }
+.btn-sm:hover { color:var(--purple2); border-color:var(--purple); background:rgba(138,50,204,0.1); }
+.btn-sm.del:hover { color:#e87070; border-color:#e87070; background:rgba(232,112,112,0.08); }
+.stars { color:var(--gold); font-size:0.85rem; }
+
+/* ── EMPTY ── */
+.empty { text-align:center; padding:4rem 2rem; color:var(--muted); }
+.empty-icon { font-size:2.5rem; margin-bottom:0.8rem; opacity:0.35; }
+.empty-label { font-family:var(--fe); font-style:italic; font-size:0.9rem; color:var(--muted); line-height:2; opacity:0.7; }
+
+/* ── MODAL ── */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(4,0,10,0.88); backdrop-filter:blur(6px); z-index:1000; align-items:center; justify-content:center; padding:1rem; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--bg2); border:1px solid var(--border); padding:2rem; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; position:relative; clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px)); animation:modal-in 0.2s ease; }
+@keyframes modal-in { from{opacity:0;transform:scale(0.97) translateY(8px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.modal::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--purple),var(--wine),var(--purple)); }
+.modal-title { font-family:var(--cd); font-size:1rem; letter-spacing:0.08em; color:var(--purple2); margin-bottom:1.5rem; padding-bottom:0.8rem; border-bottom:1px solid var(--border); text-shadow:0 0 14px rgba(176,110,232,0.35); }
+.form-group { margin-bottom:1.1rem; }
+label { display:block; font-family:var(--ci); font-size:0.65rem; letter-spacing:0.16em; color:var(--muted); margin-bottom:0.4rem; text-transform:uppercase; }
+input, textarea, select { width:100%; background:rgba(255,255,255,0.03); border:1px solid rgba(138,50,204,0.25); color:var(--text); font-family:var(--fe); font-size:0.9rem; padding:0.55rem 0.8rem; outline:none; transition:border-color 0.2s,background 0.2s; border-radius:0; }
+input[type="date"] { color-scheme: dark; }
+input:focus,textarea:focus,select:focus { border-color:var(--purple); background:rgba(138,50,204,0.06); box-shadow:0 0 0 1px rgba(138,50,204,0.15); }
+select option { background:var(--bg2); }
+textarea { resize:vertical; min-height:85px; }
+.star-input { display:flex; gap:0.3rem; margin-top:0.3rem; }
+.star-input span { font-size:1.3rem; cursor:pointer; color:var(--muted); transition:color 0.15s,text-shadow 0.15s; line-height:1; }
+.star-input span.lit { color:var(--gold); text-shadow:0 0 8px rgba(201,168,76,0.5); }
+.modal-actions { display:flex; gap:0.6rem; justify-content:flex-end; margin-top:1.4rem; padding-top:1rem; border-top:1px solid var(--border); }
+.btn-cancel { background:transparent; border:1px solid rgba(157,138,181,0.3); color:var(--muted); }
+.btn-save { background:rgba(138,50,204,0.2); border:1px solid var(--purple); color:var(--purple2); }
+.btn-cancel,.btn-save { font-family:var(--ci); font-size:0.68rem; letter-spacing:0.14em; padding:0.55rem 1.2rem; cursor:pointer; text-transform:uppercase; transition:all 0.15s; border-radius:0; }
+.btn-cancel:hover { border-color:var(--muted); color:var(--text); }
+.btn-save:hover { background:rgba(138,50,204,0.35); box-shadow:0 0 12px rgba(138,50,204,0.3); color:var(--gold2); }
+
+/* ── PIRÂMIDE ── */
+.pyramid-card { background:linear-gradient(135deg,var(--bg2),var(--bg3)); border:1px solid var(--border); padding:1.5rem; margin-bottom:1rem; clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px)); }
+.pyramid-name { font-family:var(--ci); font-size:1rem; color:var(--text); margin-bottom:1.2rem; display:flex; justify-content:space-between; align-items:center; }
+.pyramid-visual { display:flex; flex-direction:column; align-items:center; gap:3px; margin-bottom:1rem; }
+.tier { display:flex; align-items:center; gap:0.8rem; padding:0.55rem 1rem; border-radius:1px; transition:filter 0.2s; }
+.tier:hover { filter:brightness(1.2); }
+.tier-top  { width:44%; background:rgba(181,35,64,0.18); border:1px solid rgba(181,35,64,0.4); }
+.tier-mid  { width:65%; background:rgba(138,50,204,0.18); border:1px solid rgba(138,50,204,0.4); }
+.tier-base { width:86%; background:rgba(139,26,74,0.18); border:1px solid rgba(139,26,74,0.4); }
+.tier-lbl { font-family:var(--ci); font-size:0.6rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); min-width:65px; text-align:right; white-space:nowrap; }
+.tier-txt { font-size:0.82rem; color:var(--text); font-style:italic; flex:1; }
+
+/* ── DIÁRIO ── */
+.notes-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1rem; }
+.note-card { background:linear-gradient(135deg,var(--bg2),var(--bg3)); border:1px solid rgba(138,50,204,0.2); padding:1.2rem; clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px)); transition:border-color 0.2s; }
+.note-card:hover { border-color:rgba(138,50,204,0.4); }
+.note-date { font-family:var(--ci); font-size:0.6rem; color:var(--gold); letter-spacing:0.16em; margin-bottom:0.5rem; text-transform:uppercase; opacity:0.75; }
+.note-title { font-family:var(--ci); font-size:0.92rem; color:var(--text); margin-bottom:0.5rem; font-weight:600; }
+.note-body { font-size:0.85rem; color:var(--muted); line-height:1.7; font-style:italic; white-space:pre-wrap; }
+
+/* ── GLOSSÁRIO ── */
+.glos-item { display:grid; grid-template-columns:180px 1fr auto; gap:1rem; padding:1rem 0; border-bottom:1px solid rgba(138,50,204,0.12); align-items:start; }
+.glos-item:last-child { border-bottom:none; }
+.glos-term { font-family:var(--ci); font-size:.88rem; color:var(--purple2); font-weight:600; }
+.glos-def { font-size:.85rem; color:var(--muted); line-height:1.65; font-style:italic; }
+.glos-ex { font-size:.78rem; color:var(--gold); margin-top:.3rem; font-style:italic; }
+
+/* ── FAMÍLIAS ── */
+.fam-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; }
+.fam-card { background:linear-gradient(135deg,var(--bg2),var(--bg3)); border:1px solid rgba(138,50,204,0.2); padding:1.2rem; text-align:center; transition:all 0.2s; clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px)); cursor:default; }
+.fam-card:hover { border-color:rgba(138,50,204,0.5); transform:translateY(-2px); box-shadow:0 6px 20px rgba(138,50,204,0.1); }
+.fam-icon { font-size:2rem; margin-bottom:.5rem; }
+.fam-name { font-family:var(--ci); font-size:.9rem; color:var(--purple2); margin-bottom:.4rem; font-weight:600; }
+.fam-desc { font-size:.78rem; color:var(--muted); line-height:1.55; font-style:italic; }
+.fam-tags { display:flex; flex-wrap:wrap; gap:.3rem; justify-content:center; margin-top:.7rem; }
+.fam-tag { font-family:var(--ci); font-size:.58rem; letter-spacing:.08em; padding:.15rem .5rem; background:rgba(184,146,74,0.1); border:1px solid rgba(184,146,74,0.22); color:var(--gold2); }
+
+/* ── LABORATÓRIO ── */
+.lab-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1rem; }
+.lab-card {
+  background:linear-gradient(135deg,var(--bg2),#150118);
+  border:1px solid rgba(184,146,74,0.22); padding:1.3rem;
+  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
+  transition:border-color 0.2s,box-shadow 0.2s; position:relative;
+}
+.lab-card:hover { border-color:rgba(184,146,74,0.45); box-shadow:0 0 18px rgba(184,146,74,0.08); }
+.lab-card::after { content:''; position:absolute; top:0; right:0; width:12px; height:12px; border-top:1px solid var(--gold); border-right:1px solid var(--gold); opacity:0.4; }
+.lab-name { font-family:var(--ci); font-size:0.95rem; color:var(--text); font-weight:600; margin-bottom:0.2rem; }
+.lab-date { font-family:var(--ci); font-size:0.58rem; color:var(--gold); letter-spacing:0.15em; text-transform:uppercase; opacity:0.7; margin-bottom:0.8rem; }
+.lab-row { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.5rem; }
+.lab-pill { font-family:var(--ci); font-size:0.6rem; letter-spacing:0.1em; padding:0.2rem 0.6rem; border-radius:1px; }
+.lab-pill-essence { background:rgba(139,26,74,0.25); border:1px solid rgba(139,26,74,0.4); color:#d97aaa; }
+.lab-pill-perfume { background:rgba(138,50,204,0.2);  border:1px solid rgba(138,50,204,0.35); color:var(--purple2); }
+.lab-pill-time    { background:rgba(184,146,74,0.15); border:1px solid rgba(184,146,74,0.3);  color:var(--gold2); }
+.lab-pill-label   { font-family:var(--ci); font-size:0.52rem; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; align-self:center; }
+.lab-obs { font-size:0.83rem; color:var(--muted); font-style:italic; line-height:1.6; margin-top:0.6rem; padding-top:0.6rem; border-top:1px solid rgba(184,146,74,0.1); }
+
+/* timer */
+.lab-timer-wrap { margin-top:0.8rem; padding-top:0.8rem; border-top:1px solid rgba(184,146,74,0.12); }
+.lab-timer-bar { height:3px; background:rgba(138,50,204,0.15); border-radius:1px; overflow:hidden; margin-top:0.3rem; }
+.lab-timer-fill { height:100%; background:linear-gradient(90deg,var(--wine),var(--purple),var(--gold)); border-radius:1px; transition:width 1s linear; }
+.lab-timer-display { display:flex; justify-content:space-between; align-items:center; margin-top:0.35rem; }
+.lab-timer-val { font-family:var(--ci); font-size:0.85rem; color:var(--gold2); letter-spacing:0.1em; }
+.lab-timer-btns { display:flex; gap:0.4rem; }
+.btn-timer { font-family:var(--ci); font-size:0.58rem; letter-spacing:0.1em; padding:0.25rem 0.65rem; background:transparent; cursor:pointer; text-transform:uppercase; transition:all 0.15s; border:1px solid rgba(138,50,204,0.3); color:var(--purple2); border-radius:0; }
+.btn-timer:hover { background:rgba(138,50,204,0.12); border-color:var(--purple); }
+.btn-timer.stop { border-color:rgba(158,31,56,0.4); color:var(--wine); }
+.btn-timer.stop:hover { background:rgba(158,31,56,0.1); }
+.btn-timer.done { border-color:rgba(184,146,74,0.5); color:var(--gold2); }
+
+/* ── RESPONSIVE ── */
+@media(max-width:680px){
+  #sidebar { width:56px; padding:.8rem 0; }
+  .menu-section-label,.menu-label,.menu-count,#sidebar-footer { display:none; }
+  .menu-item { padding:.7rem; justify-content:center; }
+  .menu-item::before { left:.3rem; }
+  #stats-bar { gap:.7rem; }
+  .stat-bar-wrap { display:none; }
+  #content { padding:1rem; }
+  .glos-item { grid-template-columns:1fr; gap:.3rem; }
+}
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+
+<div id="load-overlay" style="position:fixed;inset:0;z-index:5000;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0.8rem;">
+  <div style="font-family:var(--cd);font-size:1.4rem;background:linear-gradient(135deg,#c084fc 0%,#8b3dde 45%,#b52340 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Aliscência</div>
+  <div style="font-family:var(--ci);font-size:0.7rem;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;">Invocando o grimório…</div>
+</div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <svg class="logo-flask" viewBox="0 0 52 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="26" cy="9" rx="6" ry="3" fill="#5a1a2a" stroke="#b52340" stroke-width="1.2"/>
+    <rect x="22" y="9" width="8" height="14" rx="1" fill="#6b1f2f" stroke="#b52340" stroke-width="1"/>
+    <circle cx="26" cy="8" r="4" fill="none" stroke="#c084fc" stroke-width="1"/>
+    <circle cx="26" cy="8" r="1.5" fill="#c084fc" opacity="0.8"/>
+    <path d="M18 23 L8 46 Q7 50 12 52 L40 52 Q45 50 44 46 L34 23 Z" fill="#b52340" opacity="0.85" stroke="#c0392b" stroke-width="1"/>
+    <path d="M20 23 L12 43 Q11 48 16 50 L36 50 Q41 48 40 43 L32 23 Z" fill="#c0392b" opacity="0.4"/>
+  </svg>
+  <span class="logo-text">Aliscência</span>
+  <span id="sync-status" style="font-family:var(--ci);font-size:0.58rem;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;opacity:0.7;white-space:nowrap;">Carregando…</span>
+  <div id="stats-bar">
+    <div class="stat-item"><div class="stat-label">Essências</div><div class="stat-val" id="st-perfumes">—</div></div>
+    <div class="stat-item"><div class="stat-label">Matérias</div><div class="stat-val" id="st-ing">—</div></div>
+    <div class="stat-item"><div class="stat-label">Crônicas</div><div class="stat-val" id="st-notas">—</div></div>
+  </div>
+</div>
+
+<div id="app">
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="menu-section-label">Acervo</div>
+    <div class="menu-item active" onclick="nav('perfumes',this)"><span class="menu-icon">🌹</span><span class="menu-label">Perfumes</span><span class="menu-count" id="mc-perfumes">0</span></div>
+    <div class="menu-item" onclick="nav('ingredientes',this)"><span class="menu-icon">🌿</span><span class="menu-label">Ingredientes</span><span class="menu-count" id="mc-ing">0</span></div>
+    <div class="menu-item" onclick="nav('piramide',this)"><span class="menu-icon">⬡</span><span class="menu-label">Pirâmide</span><span class="menu-count" id="mc-pi">0</span></div>
+    <div class="menu-section-label" style="margin-top:.5rem">Conhecimento</div>
+    <div class="menu-item" onclick="nav('familias',this)"><span class="menu-icon">🌑</span><span class="menu-label">Famílias</span></div>
+    <div class="menu-item" onclick="nav('glossario',this)"><span class="menu-icon">✦</span><span class="menu-label">Glossário</span><span class="menu-count" id="mc-gl">0</span></div>
+    <div class="menu-section-label" style="margin-top:.5rem">Prática</div>
+    <div class="menu-item" onclick="nav('notas',this)"><span class="menu-icon">📖</span><span class="menu-label">Diário</span><span class="menu-count" id="mc-nt">0</span></div>
+    <div class="menu-item" onclick="nav('lab',this)"><span class="menu-icon">⚗️</span><span class="menu-label">Laboratório</span><span class="menu-count" id="mc-lab">0</span></div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- PERFUMES -->
+    <div class="section active" id="sec-perfumes">
+      <div class="sec-head"><div class="sec-title">Perfumes</div><div class="sec-sub">Acervo Olfativo</div></div>
+      <button class="add-btn" onclick="openModal('perfume')">+ Registrar Perfume</button>
+      <div class="filter-bar">
+        <input class="filter-input" id="pf-filter-q" placeholder="Buscar por nome, marca ou notas…" oninput="renderPerfumes()">
+        <select class="filter-select" id="pf-filter-fam" onchange="renderPerfumes()">
+          <option value="">Todas as famílias</option>
+          <option>Floral</option><option>Amadeirado</option><option>Oriental</option>
+          <option>Fresco</option><option>Cítrico</option><option>Fougère</option>
+          <option>Chypre</option><option>Gourmand</option><option>Especiado</option>
+          <option>Couro</option><option>Aromático</option><option>Aquático</option>
+        </select>
+        <select class="filter-select" id="pf-filter-stars" onchange="renderPerfumes()">
+          <option value="">Qualquer avaliação</option>
+          <option value="5">★★★★★</option><option value="4">★★★★+</option>
+          <option value="3">★★★+</option>
+        </select>
+        <button class="filter-clear" onclick="clearFilters('pf')">Limpar</button>
+      </div>
+      <div class="grid" id="perfumes-grid"></div>
+      <div class="empty" id="perfumes-empty"><div class="empty-icon">🕯️</div><div class="empty-label">Nenhum perfume encontrado</div></div>
+    </div>
+
+    <!-- INGREDIENTES -->
+    <div class="section" id="sec-ingredientes">
+      <div class="sec-head"><div class="sec-title">Ingredientes</div><div class="sec-sub">Matérias-Primas</div></div>
+      <button class="add-btn" onclick="openModal('ingrediente')">+ Adicionar Ingrediente</button>
+      <div class="filter-bar">
+        <input class="filter-input" id="ing-filter-q" placeholder="Buscar por nome ou perfil…" oninput="renderIngredientes()">
+        <select class="filter-select" id="ing-filter-fam" onchange="renderIngredientes()">
+          <option value="">Todas as famílias</option>
+          <option>Floral</option><option>Amadeirado</option><option>Oriental / Balsâmico</option>
+          <option>Terroso / Musgo</option><option>Cítrico</option><option>Especiado</option>
+          <option>Verde / Herbáceo</option><option>Gourmand / Doce</option><option>Animal</option><option>Aquático</option>
+        </select>
+        <select class="filter-select" id="ing-filter-tipo" onchange="renderIngredientes()">
+          <option value="">Todos os tipos</option>
+          <option>Ingrediente Natural</option><option>Absoluto</option><option>Tintura</option>
+          <option>Concreto</option><option>Molécula Sintética</option><option>Isolado</option><option>Resinóide</option>
+        </select>
+        <button class="filter-clear" onclick="clearFilters('ing')">Limpar</button>
+      </div>
+      <div class="grid" id="ingredientes-grid"></div>
+      <div class="empty" id="ingredientes-empty"><div class="empty-icon">🌿</div><div class="empty-label">Nenhum ingrediente encontrado</div></div>
+    </div>
+
+    <!-- PIRÂMIDE -->
+    <div class="section" id="sec-piramide">
+      <div class="sec-head"><div class="sec-title">Pirâmide Olfativa</div><div class="sec-sub">Estrutura de Notas</div></div>
+      <button class="add-btn" onclick="openModal('piramide')">+ Analisar Perfume</button>
+      <div class="filter-bar">
+        <input class="filter-input" id="pi-filter-q" placeholder="Buscar por nome ou notas…" oninput="renderPiramides()">
+        <button class="filter-clear" onclick="clearFilters('pi')">Limpar</button>
+      </div>
+      <div id="piramide-list"></div>
+      <div class="empty" id="piramide-empty"><div class="empty-icon">⬡</div><div class="empty-label">Nenhuma pirâmide encontrada</div></div>
+    </div>
+
+    <!-- FAMÍLIAS -->
+    <div class="section" id="sec-familias">
+      <div class="sec-head"><div class="sec-title">Famílias Olfativas</div><div class="sec-sub">Guia de Referência</div></div>
+      <div class="fam-grid" id="fam-grid"></div>
+    </div>
+
+    <!-- GLOSSÁRIO -->
+    <div class="section" id="sec-glossario">
+      <div class="sec-head"><div class="sec-title">Glossário</div><div class="sec-sub">Termos & Definições</div></div>
+      <button class="add-btn" onclick="openModal('glossario')">+ Adicionar Termo</button>
+      <div class="filter-bar">
+        <input class="filter-input" id="gl-filter-q" placeholder="Buscar termo ou definição…" oninput="renderGlossario()">
+        <button class="filter-clear" onclick="clearFilters('gl')">Limpar</button>
+      </div>
+      <div id="glossario-list"></div>
+      <div class="empty" id="glossario-empty" style="display:none"><div class="empty-icon">✦</div><div class="empty-label">Nenhum termo encontrado</div></div>
+    </div>
+
+    <!-- DIÁRIO -->
+    <div class="section" id="sec-notas">
+      <div class="sec-head"><div class="sec-title">Diário Olfativo</div><div class="sec-sub">Impressões & Descobertas</div></div>
+      <button class="add-btn" onclick="openModal('nota')">+ Nova Entrada</button>
+      <div class="filter-bar">
+        <input class="filter-input" id="nt-filter-q" placeholder="Buscar por título ou conteúdo…" oninput="renderNotas()">
+        <input class="filter-input" id="nt-filter-de" type="date" title="De" style="flex:0;min-width:140px" onchange="renderNotas()">
+        <input class="filter-input" id="nt-filter-ate" type="date" title="Até" style="flex:0;min-width:140px" onchange="renderNotas()">
+        <button class="filter-clear" onclick="clearFilters('nt')">Limpar</button>
+      </div>
+      <div class="notes-grid" id="notas-grid"></div>
+      <div class="empty" id="notas-empty"><div class="empty-icon">📖</div><div class="empty-label">Nenhuma entrada encontrada</div></div>
+    </div>
+
+    <!-- LABORATÓRIO -->
+    <div class="section" id="sec-lab">
+      <div class="sec-head"><div class="sec-title">Laboratório</div><div class="sec-sub">Experimentos & Difusão</div></div>
+      <button class="add-btn" onclick="openModal('lab')">+ Novo Experimento</button>
+      <div class="filter-bar">
+        <input class="filter-input" id="lab-filter-q" placeholder="Buscar por nome, essência ou perfume…" oninput="renderLab()">
+        <button class="filter-clear" onclick="clearFilters('lab')">Limpar</button>
+      </div>
+      <div class="lab-grid" id="lab-grid"></div>
+      <div class="empty" id="lab-empty"><div class="empty-icon">⚗️</div><div class="empty-label">Nenhum experimento registrado<br>Inicie seu primeiro ensaio olfativo</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════ MODALS ═══════════ -->
+
+<!-- Perfume -->
+<div class="modal-overlay" id="modal-perfume"><div class="modal">
+  <div class="modal-title">✦ Registrar Perfume</div>
+  <input type="hidden" id="pf-id">
+  <div class="form-group"><label>Nome do Perfume</label><input id="pf-nome" placeholder="ex: Black Opium"></div>
+  <div class="form-group"><label>Casa / Marca</label><input id="pf-marca" placeholder="ex: Yves Saint Laurent"></div>
+  <div class="form-group"><label>Família Olfativa</label>
+    <select id="pf-familia"><option value="">—</option><option>Floral</option><option>Amadeirado</option><option>Oriental</option><option>Fresco</option><option>Cítrico</option><option>Fougère</option><option>Chypre</option><option>Gourmand</option><option>Especiado</option><option>Couro</option><option>Aromático</option><option>Aquático</option></select></div>
+  <div class="form-group"><label>Concentração</label>
+    <select id="pf-conc"><option value="">—</option><option>Parfum (Extrait)</option><option>Eau de Parfum (EDP)</option><option>Eau de Toilette (EDT)</option><option>Eau de Cologne (EDC)</option><option>Eau Fraîche</option></select></div>
+  <div class="form-group"><label>Notas Principais</label><input id="pf-notas" placeholder="ex: baunilha, café, jasmim"></div>
+  <div class="form-group"><label>Impressões & Observações</label><textarea id="pf-obs" placeholder="Como esse perfume te afetou?"></textarea></div>
+  <div class="form-group"><label>Avaliação</label>
+    <div class="star-input" id="pf-stars"><span onclick="setStar('pf',1)">★</span><span onclick="setStar('pf',2)">★</span><span onclick="setStar('pf',3)">★</span><span onclick="setStar('pf',4)">★</span><span onclick="setStar('pf',5)">★</span></div>
+    <input type="hidden" id="pf-rating" value="0"></div>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('perfume')">Cancelar</button><button class="btn-save" onclick="savePerfume()">Guardar</button></div>
+</div></div>
+
+<!-- Ingrediente -->
+<div class="modal-overlay" id="modal-ingrediente"><div class="modal">
+  <div class="modal-title">✦ Ingrediente & Essência</div>
+  <input type="hidden" id="ing-id">
+  <div class="form-group"><label>Nome</label><input id="ing-nome" placeholder="ex: Patchouli"></div>
+  <div class="form-group"><label>Tipo</label>
+    <select id="ing-tipo"><option value="">—</option><option>Ingrediente Natural</option><option>Absoluto</option><option>Tintura</option><option>Concreto</option><option>Molécula Sintética</option><option>Isolado</option><option>Resinóide</option></select></div>
+  <div class="form-group"><label>Origem / País</label><input id="ing-origem" placeholder="ex: Indonésia"></div>
+  <div class="form-group"><label>Família Olfativa</label>
+    <select id="ing-familia"><option value="">—</option><option>Floral</option><option>Amadeirado</option><option>Oriental / Balsâmico</option><option>Terroso / Musgo</option><option>Cítrico</option><option>Especiado</option><option>Verde / Herbáceo</option><option>Gourmand / Doce</option><option>Animal</option><option>Aquático</option></select></div>
+  <div class="form-group"><label>Perfil Aromático</label><textarea id="ing-perfil" placeholder="Como é o cheiro? Duração, projeção..."></textarea></div>
+  <div class="form-group"><label>Presente em (perfumes)</label><input id="ing-usadonos" placeholder="ex: Shalimar, Opium, Vol de Nuit"></div>
+  <div class="form-group"><label>Notas & Curiosidades</label><textarea id="ing-obs" placeholder="Extração, história, variações..."></textarea></div>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('ingrediente')">Cancelar</button><button class="btn-save" onclick="saveIngrediente()">Guardar</button></div>
+</div></div>
+
+<!-- Pirâmide -->
+<div class="modal-overlay" id="modal-piramide"><div class="modal">
+  <div class="modal-title">✦ Pirâmide Olfativa</div>
+  <input type="hidden" id="pi-id">
+  <div class="form-group"><label>Nome do Perfume</label><input id="pi-nome" placeholder="ex: Chanel N°5"></div>
+  <div class="form-group"><label>Notas de Saída — Topo (15–30 min)</label><input id="pi-topo" placeholder="ex: bergamota, limão, aldeídos"></div>
+  <div class="form-group"><label>Notas de Coração (30 min – 4h)</label><input id="pi-coracao" placeholder="ex: jasmim, rosa, ylang-ylang"></div>
+  <div class="form-group"><label>Notas de Fundo — Base (4h+)</label><input id="pi-base" placeholder="ex: sândalo, âmbar, almíscar"></div>
+  <div class="form-group"><label>Observações</label><textarea id="pi-obs" placeholder="Como as notas evoluem?"></textarea></div>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('piramide')">Cancelar</button><button class="btn-save" onclick="savePiramide()">Guardar</button></div>
+</div></div>
+
+<!-- Nota/Diário -->
+<div class="modal-overlay" id="modal-nota"><div class="modal">
+  <div class="modal-title">✦ Nova Entrada no Diário</div>
+  <input type="hidden" id="nt-id">
+  <div class="form-group"><label>Título</label><input id="nt-titulo" placeholder="ex: Minha primeira vez com um Chypre"></div>
+  <div class="form-group"><label>Data</label><input id="nt-data" type="date"></div>
+  <div class="form-group"><label>Reflexão</label><textarea id="nt-corpo" style="min-height:130px" placeholder="Escreva suas impressões, emoções, descobertas..."></textarea></div>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('nota')">Cancelar</button><button class="btn-save" onclick="saveNota()">Guardar</button></div>
+</div></div>
+
+<!-- Glossário -->
+<div class="modal-overlay" id="modal-glossario"><div class="modal">
+  <div class="modal-title">✦ Termo do Glossário</div>
+  <input type="hidden" id="gl-id">
+  <div class="form-group"><label>Termo</label><input id="gl-termo" placeholder="ex: Drydown"></div>
+  <div class="form-group"><label>Definição</label><textarea id="gl-def" placeholder="Explique o termo com suas próprias palavras..."></textarea></div>
+  <div class="form-group"><label>Exemplo de uso</label><input id="gl-exemplo" placeholder="ex: 'O drydown revela notas de sândalo'"></div>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('glossario')">Cancelar</button><button class="btn-save" onclick="saveGlossario()">Guardar</button></div>
+</div></div>
+
+<!-- Laboratório -->
+<div class="modal-overlay" id="modal-lab"><div class="modal">
+  <div class="modal-title">⚗ Novo Experimento</div>
+  <input type="hidden" id="lab-id">
+  <div class="form-group"><label>Nome do Experimento</label><input id="lab-nome" placeholder="ex: Ensaio de Patchouli + Rosa"></div>
+  <div class="form-group"><label>Data</label><input id="lab-data" type="date"></div>
+  <div class="form-group"><label>Essência(s) Testada(s)</label><input id="lab-essencia" placeholder="ex: Absoluto de jasmim, vetiver, âmbar"></div>
+  <div class="form-group"><label>Perfume de Referência (opcional)</label><input id="lab-perfume" placeholder="ex: Shalimar — base inspiradora"></div>
+  <div class="form-group"><label>Tempo de Difusão</label>
+    <div style="display:flex;gap:.6rem;align-items:center">
+      <input id="lab-horas" type="number" min="0" max="23" placeholder="h" style="width:70px">
+      <span style="color:var(--muted);font-family:var(--ci);font-size:.7rem">h</span>
+      <input id="lab-min" type="number" min="0" max="59" placeholder="min" style="width:70px">
+      <span style="color:var(--muted);font-family:var(--ci);font-size:.7rem">min</span>
+    </div>
+  </div>
+  <div class="form-group"><label>Método de Difusão</label>
+    <select id="lab-metodo">
+      <option value="">—</option>
+      <option>Tira de papel (mouillette)</option>
+      <option>Pele — pulso</option>
+      <option>Pele — antebraço</option>
+      <option>Difusor de ambiente</option>
+      <option>Vela aromatizada</option>
+      <option>Tecido</option>
+      <option>Outro</option>
+    </select>
+  </div>
+  <div class="form-group"><label>Observações & Impressões</label><textarea id="lab-obs" style="min-height:100px" placeholder="Como o aroma evoluiu? Que notas surgiram? Quanto projetou?"></textarea></div>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('lab')">Cancelar</button><button class="btn-save" onclick="saveLab()">Guardar</button></div>
+</div></div>
+
+<script>
+// ── PARTICLES ──
+(function(){
+  const c=document.getElementById('particles'),ctx=c.getContext('2d');
+  let pts=[];
+  function resize(){c.width=innerWidth;c.height=innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  for(let i=0;i<50;i++) pts.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.2+.2,dx:(Math.random()-.5)*.15,dy:-Math.random()*.2-.04,o:Math.random()*.4+.08,c:Math.random()>.5?'155,61,222':'181,35,64'});
+  function draw(){ctx.clearRect(0,0,c.width,c.height);pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(${p.c},${p.o})`;ctx.fill();p.x+=p.dx;p.y+=p.dy;if(p.y<-5){p.y=c.height+5;p.x=Math.random()*c.width;}if(p.x<0)p.x=c.width;if(p.x>c.width)p.x=0;});requestAnimationFrame(draw);}
+  draw();
+})();
+
+// ── SUPABASE ──
+const SUPABASE_URL      = 'https://cfdzwduajsatbydphrtq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmZHp3ZHVhanNhdGJ5ZHBocnRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MzQ2MDIsImV4cCI6MjA5MzQxMDYwMn0.zUB9rASXCXxKVJFfvXrfcMCivQ3fPV4AE0Jvo4hCamQ';
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const TABLE_NAME = 'aliscencia_dados';
+const ROW_ID = 'principal';
+
+function setSyncStatus(text, color){
+  const el = document.getElementById('sync-status');
+  if(!el) return;
+  el.textContent = text;
+  el.style.color = color || '';
+}
+
+// ── STATE ──
+let db = {};
+
+function ensureShape(){
+  db.perfumes     = db.perfumes     || [];
+  db.ingredientes = db.ingredientes || [];
+  db.piramides    = db.piramides    || [];
+  db.notas        = db.notas        || [];
+  db.glossario    = db.glossario    || defaultGlossario();
+  db.lab          = db.lab          || [];
+}
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+
+// carrega os dados do Supabase (com cache local como apoio offline)
+async function loadDB(){
+  // migração de versões antigas com localStorage, usada só se a nuvem estiver vazia
+  function migrarLocal(){
+    try{
+      const v3 = JSON.parse(localStorage.getItem('aliscencia_v3')||'null');
+      if(v3) return v3;
+      const v2 = JSON.parse(localStorage.getItem('aliscencia_v2')||'null');
+      if(v2) return v2;
+    }catch(e){}
+    return null;
+  }
+
+  try{
+    const { data, error } = await sbClient
+      .from(TABLE_NAME)
+      .select('conteudo')
+      .eq('id', ROW_ID)
+      .maybeSingle();
+    if(error) throw error;
+
+    if(data && data.conteudo){
+      db = data.conteudo;
+      ensureShape();
+      localStorage.setItem('aliscencia_cache', JSON.stringify(db));
+      setSyncStatus('Sincronizado', 'var(--gold2)');
+    } else {
+      // nada na nuvem ainda: tenta migrar dados locais antigos, senão começa vazio
+      db = migrarLocal() || {};
+      ensureShape();
+      await saveDB();
+      setSyncStatus('Sincronizado', 'var(--gold2)');
+    }
+  }catch(err){
+    console.error('Falha ao carregar do Supabase:', err);
+    const cache = JSON.parse(localStorage.getItem('aliscencia_cache')||'null') || migrarLocal();
+    db = cache || {};
+    ensureShape();
+    setSyncStatus('Offline (dados locais)', '#e87070');
+  }
+}
+
+// salva os dados no Supabase, com cache local como apoio
+async function saveDB(){
+  localStorage.setItem('aliscencia_cache', JSON.stringify(db));
+  setSyncStatus('Sincronizando…', 'var(--muted)');
+  try{
+    const { error } = await sbClient
+      .from(TABLE_NAME)
+      .upsert({ id: ROW_ID, conteudo: db, atualizado_em: new Date().toISOString() });
+    if(error) throw error;
+    setSyncStatus('Sincronizado', 'var(--gold2)');
+  }catch(err){
+    console.error('Falha ao salvar no Supabase:', err);
+    setSyncStatus('Erro ao sincronizar', '#e87070');
+  }
+}
+
+function save(){ saveDB(); }
+
+// ── NAV ──
+function nav(id, el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  el.classList.add('active');
+  render();
+}
+
+// ── MODAL ──
+function openModal(type, id){
+  clearModal(type);
+  if(id) loadModal(type, id);
+  // preencher data de hoje nos modais com data
+  if(!id){
+    if(type==='nota')   sv('nt-data',  todayISO());
+    if(type==='lab')    sv('lab-data', todayISO());
+  }
+  document.getElementById('modal-'+type).classList.add('open');
+}
+function closeModal(type){ document.getElementById('modal-'+type).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o=>{ o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }); });
+
+function clearModal(type){
+  document.querySelectorAll(`#modal-${type} input:not([type=hidden]),#modal-${type} textarea,#modal-${type} select`).forEach(el=>el.value='');
+  const h=document.querySelector(`#modal-${type} input[type=hidden]`);
+  if(h) h.value='';
+  if(type==='perfume'){ sv('pf-rating','0'); updateStars('pf',0); }
+}
+
+function loadModal(type, id){
+  const map={perfume:'perfumes',ingrediente:'ingredientes',piramide:'piramides',nota:'notas',glossario:'glossario',lab:'lab'};
+  const item=db[map[type]].find(x=>x.id===id);
+  if(!item) return;
+  if(type==='perfume'){
+    sv('pf-id',id);sv('pf-nome',item.nome);sv('pf-marca',item.marca);sv('pf-familia',item.familia);
+    sv('pf-conc',item.conc);sv('pf-notas',item.notas);sv('pf-obs',item.obs);
+    sv('pf-rating',item.rating||0);updateStars('pf',item.rating||0);
+  } else if(type==='ingrediente'){
+    sv('ing-id',id);sv('ing-nome',item.nome);sv('ing-tipo',item.tipo);sv('ing-origem',item.origem);
+    sv('ing-familia',item.familia);sv('ing-perfil',item.perfil);sv('ing-usadonos',item.usadonos);sv('ing-obs',item.obs);
+  } else if(type==='piramide'){
+    sv('pi-id',id);sv('pi-nome',item.nome);sv('pi-topo',item.topo);sv('pi-coracao',item.coracao);sv('pi-base',item.base);sv('pi-obs',item.obs);
+  } else if(type==='nota'){
+    sv('nt-id',id);sv('nt-titulo',item.titulo);sv('nt-data',item.dataISO||'');sv('nt-corpo',item.corpo);
+  } else if(type==='glossario'){
+    sv('gl-id',id);sv('gl-termo',item.termo);sv('gl-def',item.def);sv('gl-exemplo',item.exemplo);
+  } else if(type==='lab'){
+    sv('lab-id',id);sv('lab-nome',item.nome);sv('lab-data',item.dataISO||'');
+    sv('lab-essencia',item.essencia);sv('lab-perfume',item.perfume);
+    sv('lab-horas',item.horas||0);sv('lab-min',item.minutos||0);
+    sv('lab-metodo',item.metodo);sv('lab-obs',item.obs);
+  }
+}
+
+function sv(id,val){ const el=document.getElementById(id); if(el) el.value=val||''; }
+function gv(id){ return (document.getElementById(id)||{}).value?.trim()||''; }
+
+// ── STARS ──
+function setStar(p,n){ sv(p+'-rating',n); updateStars(p,n); }
+function updateStars(p,n){ document.querySelectorAll(`#${p}-stars span`).forEach((s,i)=>s.classList.toggle('lit',i<n)); }
+
+// ── DATES ──
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); const meses=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']; return `${d} ${meses[parseInt(m)-1]} ${y}`; }
+
+// ── SAVES ──
+function savePerfume(){
+  const id=gv('pf-id')||uid();
+  upsert(db.perfumes,{id,nome:gv('pf-nome'),marca:gv('pf-marca'),familia:gv('pf-familia'),conc:gv('pf-conc'),notas:gv('pf-notas'),obs:gv('pf-obs'),rating:parseInt(gv('pf-rating'))||0});
+  save();closeModal('perfume');render();
+}
+function saveIngrediente(){
+  const id=gv('ing-id')||uid();
+  upsert(db.ingredientes,{id,nome:gv('ing-nome'),tipo:gv('ing-tipo'),origem:gv('ing-origem'),familia:gv('ing-familia'),perfil:gv('ing-perfil'),usadonos:gv('ing-usadonos'),obs:gv('ing-obs')});
+  save();closeModal('ingrediente');render();
+}
+function savePiramide(){
+  const id=gv('pi-id')||uid();
+  upsert(db.piramides,{id,nome:gv('pi-nome'),topo:gv('pi-topo'),coracao:gv('pi-coracao'),base:gv('pi-base'),obs:gv('pi-obs')});
+  save();closeModal('piramide');render();
+}
+function saveNota(){
+  const id=gv('nt-id')||uid();
+  const dataISO=gv('nt-data')||todayISO();
+  upsert(db.notas,{id,titulo:gv('nt-titulo'),corpo:gv('nt-corpo'),dataISO,dataFmt:fmtDate(dataISO)});
+  save();closeModal('nota');render();
+}
+function saveGlossario(){
+  const id=gv('gl-id')||uid();
+  upsert(db.glossario,{id,termo:gv('gl-termo'),def:gv('gl-def'),exemplo:gv('gl-exemplo')});
+  save();closeModal('glossario');render();
+}
+function saveLab(){
+  const id=gv('lab-id')||uid();
+  const dataISO=gv('lab-data')||todayISO();
+  const h=parseInt(gv('lab-horas'))||0, m=parseInt(gv('lab-min'))||0;
+  const totalSec=(h*3600)+(m*60);
+  upsert(db.lab,{id,nome:gv('lab-nome'),essencia:gv('lab-essencia'),perfume:gv('lab-perfume'),horas:h,minutos:m,totalSec,metodo:gv('lab-metodo'),obs:gv('lab-obs'),dataISO,dataFmt:fmtDate(dataISO)});
+  save();closeModal('lab');render();
+}
+
+function upsert(arr,item){ const i=arr.findIndex(x=>x.id===item.id); if(i>=0) arr[i]=item; else arr.push(item); }
+function delItem(arr,id){ const i=arr.findIndex(x=>x.id===id); if(i>=0) arr.splice(i,1); save();render(); }
+
+// ── FILTERS ──
+function fq(id){ return (document.getElementById(id)||{}).value?.toLowerCase()||''; }
+function fv(id){ return (document.getElementById(id)||{}).value||''; }
+function clearFilters(prefix){
+  document.querySelectorAll(`[id^="${prefix}-filter"]`).forEach(el=>el.value='');
+  render();
+}
+
+// ── BADGE ──
+const BADGE={Floral:'floral',Amadeirado:'woody',Oriental:'oriental',Fresco:'fresh',Cítrico:'citrus','Fougère':'fougere',Chypre:'chypre',Gourmand:'gourmand',Especiado:'oriental',Couro:'woody',Aromático:'fougere',Aquático:'aquatic'};
+function badge(f){ return f?`<span class="badge badge-${BADGE[f]||'floral'}">${esc(f)}</span>`:''; }
+
+// ── RENDER ──
+function render(){ renderPerfumes();renderIngredientes();renderPiramides();renderNotas();renderGlossario();renderFamilias();renderLab();updateStats(); }
+
+function renderPerfumes(){
+  const g=document.getElementById('perfumes-grid'), e=document.getElementById('perfumes-empty');
+  const q=fq('pf-filter-q'), fam=fv('pf-filter-fam'), stars=parseInt(fv('pf-filter-stars'))||0;
+  let items=db.perfumes.filter(p=>{
+    if(fam && p.familia!==fam) return false;
+    if(stars && (p.rating||0)<stars) return false;
+    if(q && !`${p.nome} ${p.marca} ${p.notas} ${p.obs}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if(!items.length){g.innerHTML='';e.style.display='block';return;}
+  e.style.display='none';
+  g.innerHTML=items.map(p=>`
+    <div class="card">
+      <div class="card-name">${esc(p.nome||'—')}</div>
+      ${p.marca?`<div class="card-sub">${esc(p.marca)}</div>`:''}
+      ${badge(p.familia)}
+      ${p.conc?`<div style="font-family:var(--ci);font-size:.62rem;color:var(--muted);margin-bottom:.5rem;letter-spacing:.1em;text-transform:uppercase;opacity:.7">${esc(p.conc)}</div>`:''}
+      ${p.notas?`<div class="card-tags">${p.notas.split(',').map(n=>`<span class="tag">${esc(n.trim())}</span>`).join('')}</div>`:''}
+      ${p.obs?`<div class="card-desc">${esc(p.obs)}</div>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.4rem">
+        <div class="stars">${'★'.repeat(p.rating||0)}${'☆'.repeat(5-(p.rating||0))}</div>
+        <div class="card-actions"><button class="btn-sm" onclick="openModal('perfume','${p.id}')">editar</button><button class="btn-sm del" onclick="if(confirm('Remover?')) delItem(db.perfumes,'${p.id}')">✕</button></div>
+      </div>
+    </div>`).join('');
+}
+
+function renderIngredientes(){
+  const g=document.getElementById('ingredientes-grid'), e=document.getElementById('ingredientes-empty');
+  const q=fq('ing-filter-q'), fam=fv('ing-filter-fam'), tipo=fv('ing-filter-tipo');
+  let items=db.ingredientes.filter(x=>{
+    if(fam && x.familia!==fam) return false;
+    if(tipo && x.tipo!==tipo) return false;
+    if(q && !`${x.nome} ${x.perfil} ${x.obs} ${x.usadonos}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if(!items.length){g.innerHTML='';e.style.display='block';return;}
+  e.style.display='none';
+  g.innerHTML=items.map(ing=>`
+    <div class="card">
+      <div class="card-name">${esc(ing.nome||'—')}</div>
+      ${ing.origem?`<div class="card-sub">◆ ${esc(ing.origem)}</div>`:''}
+      ${badge(ing.familia)}
+      ${ing.tipo?`<div class="card-tags"><span class="tag">${esc(ing.tipo)}</span></div>`:''}
+      ${ing.perfil?`<div class="card-desc">${esc(ing.perfil)}</div>`:''}
+      ${ing.usadonos?`<div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem"><em>Em:</em> ${esc(ing.usadonos)}</div>`:''}
+      <div class="card-actions"><button class="btn-sm" onclick="openModal('ingrediente','${ing.id}')">editar</button><button class="btn-sm del" onclick="if(confirm('Remover?')) delItem(db.ingredientes,'${ing.id}')">✕</button></div>
+    </div>`).join('');
+}
+
+function renderPiramides(){
+  const list=document.getElementById('piramide-list'), e=document.getElementById('piramide-empty');
+  const q=fq('pi-filter-q');
+  let items=db.piramides.filter(x=>!q||`${x.nome} ${x.topo} ${x.coracao} ${x.base} ${x.obs}`.toLowerCase().includes(q));
+  if(!items.length){list.innerHTML='';e.style.display='block';return;}
+  e.style.display='none';
+  list.innerHTML=items.map(p=>`
+    <div class="pyramid-card">
+      <div class="pyramid-name">⬡ ${esc(p.nome||'Sem nome')}
+        <div style="display:flex;gap:.4rem"><button class="btn-sm" onclick="openModal('piramide','${p.id}')">editar</button><button class="btn-sm del" onclick="if(confirm('Remover?')) delItem(db.piramides,'${p.id}')">✕</button></div>
+      </div>
+      <div class="pyramid-visual">
+        <div class="tier tier-top"><div class="tier-lbl">Topo</div><div class="tier-txt">${esc(p.topo||'—')}</div></div>
+        <div class="tier tier-mid"><div class="tier-lbl">Coração</div><div class="tier-txt">${esc(p.coracao||'—')}</div></div>
+        <div class="tier tier-base"><div class="tier-lbl">Base</div><div class="tier-txt">${esc(p.base||'—')}</div></div>
+      </div>
+      ${p.obs?`<div style="font-size:.83rem;color:var(--muted);font-style:italic;border-top:1px solid var(--border);padding-top:.7rem">${esc(p.obs)}</div>`:''}
+    </div>`).join('');
+}
+
+function renderNotas(){
+  const g=document.getElementById('notas-grid'), e=document.getElementById('notas-empty');
+  const q=fq('nt-filter-q'), de=fv('nt-filter-de'), ate=fv('nt-filter-ate');
+  let items=[...db.notas].sort((a,b)=>(b.dataISO||'').localeCompare(a.dataISO||''));
+  items=items.filter(n=>{
+    if(q && !`${n.titulo} ${n.corpo}`.toLowerCase().includes(q)) return false;
+    if(de && n.dataISO && n.dataISO < de) return false;
+    if(ate && n.dataISO && n.dataISO > ate) return false;
+    return true;
+  });
+  if(!items.length){g.innerHTML='';e.style.display='block';return;}
+  e.style.display='none';
+  g.innerHTML=items.map(n=>`
+    <div class="note-card">
+      <div class="note-date">${esc(n.dataFmt||n.date||'')}</div>
+      <div class="note-title">${esc(n.titulo||'Sem título')}</div>
+      <div class="note-body">${esc(n.corpo||'')}</div>
+      <div class="card-actions" style="margin-top:.8rem"><button class="btn-sm" onclick="openModal('nota','${n.id}')">editar</button><button class="btn-sm del" onclick="if(confirm('Remover?')) delItem(db.notas,'${n.id}')">✕</button></div>
+    </div>`).join('');
+}
+
+function renderGlossario(){
+  const list=document.getElementById('glossario-list'), e=document.getElementById('glossario-empty');
+  const q=fq('gl-filter-q');
+  let items=[...db.glossario].sort((a,b)=>(a.termo||'').localeCompare(b.termo||''));
+  if(q) items=items.filter(x=>`${x.termo} ${x.def} ${x.exemplo}`.toLowerCase().includes(q));
+  if(!items.length){list.innerHTML='';e.style.display='block';return;}
+  e.style.display='none';
+  list.innerHTML=items.map(g=>`
+    <div class="glos-item">
+      <div class="glos-term">${esc(g.termo||'—')}</div>
+      <div><div class="glos-def">${esc(g.def||'')}</div>${g.exemplo?`<div class="glos-ex">"${esc(g.exemplo)}"</div>`:''}</div>
+      <div style="display:flex;gap:.3rem;flex-shrink:0"><button class="btn-sm" onclick="openModal('glossario','${g.id}')">editar</button><button class="btn-sm del" onclick="if(confirm('Remover?')) delItem(db.glossario,'${g.id}')">✕</button></div>
+    </div>`).join('');
+}
+
+// ── LABORATÓRIO ──
+const timers={};
+
+function fmtSec(s){ if(!s) return '—'; const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; return [h?`${h}h`:'',m?`${m}min`:'',sec?`${sec}s`:''].filter(Boolean).join(' ')||'0s'; }
+
+function renderLab(){
+  const g=document.getElementById('lab-grid'), e=document.getElementById('lab-empty');
+  const q=fq('lab-filter-q');
+  let items=[...db.lab].sort((a,b)=>(b.dataISO||'').localeCompare(a.dataISO||''));
+  if(q) items=items.filter(x=>`${x.nome} ${x.essencia} ${x.perfume} ${x.obs}`.toLowerCase().includes(q));
+  if(!items.length){g.innerHTML='';e.style.display='block';return;}
+  e.style.display='none';
+  g.innerHTML=items.map(lab=>{
+    const durLabel=lab.totalSec?fmtSec(lab.totalSec):'—';
+    return `<div class="lab-card" id="lc-${lab.id}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="lab-name">${esc(lab.nome||'Experimento')}</div><div class="lab-date">${esc(lab.dataFmt||'')}</div></div>
+        <div class="card-actions" style="margin-top:0;padding-top:0;border-top:none"><button class="btn-sm" onclick="openModal('lab','${lab.id}')">editar</button><button class="btn-sm del" onclick="if(confirm('Remover?')) delItem(db.lab,'${lab.id}')">✕</button></div>
+      </div>
+      ${lab.essencia?`<div class="lab-row"><span class="lab-pill-label">Essência</span><span class="lab-pill lab-pill-essence">${esc(lab.essencia)}</span></div>`:''}
+      ${lab.perfume?`<div class="lab-row"><span class="lab-pill-label">Referência</span><span class="lab-pill lab-pill-perfume">${esc(lab.perfume)}</span></div>`:''}
+      <div class="lab-row">
+        ${lab.totalSec?`<span class="lab-pill-label">Difusão</span><span class="lab-pill lab-pill-time">⏱ ${durLabel}</span>`:''}
+        ${lab.metodo?`<span class="lab-pill lab-pill-time" style="background:rgba(138,50,204,0.15);border-color:rgba(138,50,204,0.3);color:var(--purple2)">${esc(lab.metodo)}</span>`:''}
+      </div>
+      ${lab.obs?`<div class="lab-obs">${esc(lab.obs)}</div>`:''}
+      ${lab.totalSec?`
+      <div class="lab-timer-wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+          <span style="font-family:var(--ci);font-size:.58rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Temporizador</span>
+        </div>
+        <div class="lab-timer-bar"><div class="lab-timer-fill" id="ltf-${lab.id}" style="width:0%"></div></div>
+        <div class="lab-timer-display">
+          <div class="lab-timer-val" id="ltv-${lab.id}">00:00:00</div>
+          <div class="lab-timer-btns">
+            <button class="btn-timer" id="lts-${lab.id}" onclick="timerToggle('${lab.id}',${lab.totalSec})">Iniciar</button>
+            <button class="btn-timer stop" onclick="timerReset('${lab.id}')">Reiniciar</button>
+          </div>
+        </div>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function timerToggle(id, total){
+  if(timers[id]?.running){
+    clearInterval(timers[id].interval);
+    timers[id].running=false;
+    document.getElementById('lts-'+id).textContent='Continuar';
+  } else {
+    if(!timers[id]) timers[id]={elapsed:0,running:false};
+    timers[id].running=true;
+    document.getElementById('lts-'+id).textContent='Pausar';
+    timers[id].interval=setInterval(()=>{
+      timers[id].elapsed++;
+      const el=timers[id].elapsed;
+      const pct=Math.min(100,(el/total)*100);
+      const h=Math.floor(el/3600),m=Math.floor((el%3600)/60),s=el%60;
+      const disp=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      const vEl=document.getElementById('ltv-'+id);
+      const fEl=document.getElementById('ltf-'+id);
+      const bEl=document.getElementById('lts-'+id);
+      if(vEl) vEl.textContent=disp;
+      if(fEl) fEl.style.width=pct+'%';
+      if(el>=total){
+        clearInterval(timers[id].interval);
+        timers[id].running=false;
+        if(bEl){bEl.textContent='Concluído';bEl.classList.add('done');}
+        if(vEl) vEl.style.color='var(--gold2)';
+      }
+    },1000);
+  }
+}
+
+function timerReset(id){
+  if(timers[id]){
+    clearInterval(timers[id].interval);
+    timers[id]={elapsed:0,running:false};
+  }
+  const vEl=document.getElementById('ltv-'+id);
+  const fEl=document.getElementById('ltf-'+id);
+  const bEl=document.getElementById('lts-'+id);
+  if(vEl){vEl.textContent='00:00:00';vEl.style.color='';}
+  if(fEl) fEl.style.width='0%';
+  if(bEl){bEl.textContent='Iniciar';bEl.classList.remove('done');}
+}
+
+// ── FAMÍLIAS ──
+const FAMILIES=[
+  {icon:'🌹',name:'Floral',desc:'O coração da perfumaria clássica. Jardins em flor, feminilidade e romance.',tags:['Rosa','Jasmim','Gardênia','Tuberosa']},
+  {icon:'🪵',name:'Amadeirado',desc:'Calidez, profundidade e terra. Madeiras secas que evocam florestas antigas.',tags:['Sândalo','Cedro','Vetiver','Oud']},
+  {icon:'🌙',name:'Oriental',desc:'Sensual, denso e envolvente. Resinas e bálsamos que criam aura de mistério.',tags:['Âmbar','Baunilha','Incenso','Olíbano']},
+  {icon:'🌊',name:'Aquático',desc:'Limpo, arejado e moderno. Brisa marinha e orvalho matinal.',tags:['Ozônico','Marinho','Aquoso']},
+  {icon:'🍋',name:'Cítrico',desc:'Energizante e luminoso. Frutas cítricas que trazem vivacidade.',tags:['Bergamota','Limão','Neroli','Toranja']},
+  {icon:'🍃',name:'Fougère',desc:'Lavanda, musgo de carvalho e cumarina em estrutura harmoniosa.',tags:['Lavanda','Musgo','Cumarina','Gerânio']},
+  {icon:'🍂',name:'Chypre',desc:'Elegância e complexidade. Bergamota, labdanum e musgo de carvalho.',tags:['Bergamota','Cistus','Patchouli']},
+  {icon:'🍫',name:'Gourmand',desc:'Comestível e confortante. Notas que remetem a sobremesas e cafés.',tags:['Café','Chocolate','Caramelo','Baunilha']},
+];
+function renderFamilias(){
+  document.getElementById('fam-grid').innerHTML=FAMILIES.map(f=>`
+    <div class="fam-card"><div class="fam-icon">${f.icon}</div><div class="fam-name">${f.name}</div><div class="fam-desc">${f.desc}</div><div class="fam-tags">${f.tags.map(t=>`<span class="fam-tag">${t}</span>`).join('')}</div></div>`).join('');
+}
+
+// ── STATS ──
+function toRoman(n){ if(!n) return '—'; const v=[1000,900,500,400,100,90,50,40,10,9,5,4,1],s=['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I']; let r=''; v.forEach((val,i)=>{while(n>=val){r+=s[i];n-=val;}}); return r; }
+
+function updateStats(){
+  const p=db.perfumes.length,ing=db.ingredientes.length,nt=db.notas.length,gl=db.glossario.length,pi=db.piramides.length,la=db.lab.length;
+  document.getElementById('st-perfumes').textContent=toRoman(p);
+  document.getElementById('st-ing').textContent=toRoman(ing);
+  document.getElementById('st-notas').textContent=toRoman(nt);
+  document.getElementById('mc-perfumes').textContent=p;
+  document.getElementById('mc-ing').textContent=ing;
+  document.getElementById('mc-pi').textContent=pi;
+  document.getElementById('mc-gl').textContent=gl;
+  document.getElementById('mc-nt').textContent=nt;
+  document.getElementById('mc-lab').textContent=la;
+}
+
+// ── GLOSSÁRIO PADRÃO ──
+function defaultGlossario(){
+  return [
+    {id:uid(),termo:'Acorde',def:'Combinação de ingredientes que cria uma percepção olfativa nova, distinta das partes separadas.',exemplo:'O acorde âmbar: baunilha + labdanum + benjoim'},
+    {id:uid(),termo:'Drydown',def:'Evolução final do perfume na pele após evaporação das notas de topo e coração. Revela a base.',exemplo:'O drydown do Shalimar traz sândalo e baunilha'},
+    {id:uid(),termo:'Sillage',def:'A trilha aromática que o perfume deixa no ar quando a pessoa se move.',exemplo:'Ela tem um sillage marcante que permanece minutos após passar'},
+    {id:uid(),termo:'Fixativo',def:'Ingrediente que retarda a evaporação das notas voláteis, aumentando a longevidade.',exemplo:'O âmbar e o musgo são fixativos clássicos'},
+    {id:uid(),termo:'Absoluto',def:'Extrato concentrado obtido por solvente, geralmente de flores delicadas que não suportam destilação.',exemplo:'Absoluto de jasmim, absoluto de rosa'},
+    {id:uid(),termo:'Aldeído',def:'Molécula sintética que confere qualidade efervescente ou cítrica-gordurosa.',exemplo:'Os aldeídos C-12 dão o caráter ao Chanel N°5'},
+    {id:uid(),termo:'Tenacidade',def:'Capacidade de um ingrediente permanecer perceptível por longo tempo na pele.',exemplo:'O oud tem tenacidade excepcional'},
+    {id:uid(),termo:'Pirâmide Olfativa',def:'Estrutura que divide um perfume em três camadas temporais: topo, coração e base.',exemplo:''},
+  ];
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── INIT ──
+async function initApp(){
+  await loadDB();
+  render();
+  const overlay = document.getElementById('load-overlay');
+  if(overlay){
+    overlay.style.transition = 'opacity 0.3s ease';
+    overlay.style.opacity = '0';
+    setTimeout(()=> overlay.remove(), 300);
+  }
+}
+initApp();
+</script>
+</body>
+</html>
